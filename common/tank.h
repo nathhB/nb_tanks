@@ -1,11 +1,7 @@
 #pragma once
 
-#include <raymath.h>
-
+#include "raylib.h"
 #include "input.h"
-
-#define TANK_SIZE 50
-#define TANK_TURRENT_RADIUS 12
 
 typedef struct
 {

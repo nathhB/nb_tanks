@@ -105,6 +105,30 @@ GameSnapshot *Client_CreateGameSnapshot(Client *client)
 
 void Client_AckGameSnapshot(Client *client, unsigned int id)
 {
+    if (id <= client->last_acked_game_snapshot_id)
+        return;
+
+    GameSnapshot *last_acked_game_snapshot = &client->game_snapshot_buffer[id % GAME_SNAPSHOT_BUFFER_SIZE];
+
+    Assert(last_acked_game_snapshot->id == id, "invalid game snapshot id");
+    
+    for (unsigned int i = 0; i < last_acked_game_snapshot->event_count; i++)
+    {
+        NetworkEvent *network_event = &last_acked_game_snapshot->events[i];
+
+        if (network_event->type == NETWORK_EV_DELETE)
+            continue;
+
+        NetworkObject *network_object = GameServer_FindNetworkObjectById(network_event->network_id);
+
+        if (!network_object)
+            continue;
+
+        network_object->has_been_acked_once = true;
+        
+        memcpy(&network_object->last_acked_state, &network_event->state, sizeof(NetworkState));
+    }
+
     client->last_acked_game_snapshot_id = id;
 }
 
@@ -112,22 +136,12 @@ static int AddUpdateEventsToGameSnapshot(Client *client, GameSnapshot *game_snap
 {
     NetworkObject *network_objects[MAX_NETWORK_OBJECTS];
     unsigned int object_count = GameServer_GetNetworkObjects(network_objects);
-    GameSnapshot *last_acked_game_snapshot = &client->game_snapshot_buffer[
-        client->last_acked_game_snapshot_id % GAME_SNAPSHOT_BUFFER_SIZE
-    ]; 
-
-    Assert(
-            last_acked_game_snapshot->id == client->last_acked_game_snapshot_id,
-            "invalid game snapshot id"
-          );
 
     for (unsigned int i = 0; i < object_count; i++)
     {
         NetworkObject *network_object = network_objects[i];
-        NetworkEvent *last_acked_network_event =
-            GameSnapshot_FindNetworkEventById(last_acked_game_snapshot, network_object->id);
-        bool is_update_needed = !last_acked_network_event ||
-            network_object->is_snapshot_update_needed(&network_object->state, &last_acked_network_event->state);
+        bool is_update_needed =
+            !network_object->has_been_acked_once || network_object->is_snapshot_update_needed(network_object);
 
         if (is_update_needed)
         {

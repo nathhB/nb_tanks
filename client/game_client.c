@@ -19,6 +19,8 @@ void GameClient_Init(uint32_t network_id, Vector2 position)
 {
     game_client.last_sent_input_id = 0;
     game_client.remote_object_count = 0;
+    game_client.game_clock.tick = 0;
+    game_client.is_game_clock_synced = false;
 
     memset(game_client.remote_objects, 0, sizeof(game_client.remote_objects));
 
@@ -33,6 +35,17 @@ void GameClient_NextTick(void)
 unsigned int GameClient_GetCurrentTick(void)
 {
     return game_client.game_clock.tick;
+}
+
+void GameClient_SyncGameClock(unsigned int tick)
+{
+    game_client.game_clock.tick = tick;
+    game_client.is_game_clock_synced = true;
+}
+
+bool GameClient_IsGameClockSynchronized(void)
+{
+    return game_client.is_game_clock_synced;
 }
 
 ClientTank *GameClient_GetClientTank(void)
@@ -126,6 +139,8 @@ NetworkObjectProxy *GameClient_CreateRemoteObject(unsigned int network_id, Netwo
     remote_object->game_object = blueprint.create_game_object(&remote_object->state);
     remote_object->on_state_update = blueprint.on_state_update;
     remote_object->lag_compensation_policy = predicted ? LAG_COMPENSATION_NONE : blueprint.lag_compensation_policy;  
+
+    remote_object->game_object->network_id = network_id;
 
     if (remote_object->lag_compensation_policy == LAG_COMPENSATION_INTERP)
     {
@@ -336,7 +351,11 @@ static bool GetInterpolationStates(
     }
 
     if (!found_first_state)
+    {
+        LogWarning("Failed to find first interpolation state");
+
         return false;
+    }
 
     bool found_second_state = false;
 
@@ -354,6 +373,9 @@ static bool GetInterpolationStates(
             }
         }
     }
+
+    if (!found_second_state)
+        LogWarning("Failed to find second interpolation state");
 
     return found_second_state;
 }

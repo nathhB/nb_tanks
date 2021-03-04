@@ -22,7 +22,8 @@ int SimulateGameTick(void)
         current = current->next;
     }
 
-    GameObjectManager_UpdateGameObjects();
+    if (GameObjectManager_UpdateGameObjects() < 0)
+        return -1;
 
     return 0;
 }

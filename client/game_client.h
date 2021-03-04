@@ -1,7 +1,6 @@
 #pragma once
 
-#include <raymath.h>
-
+#include "../common/raylib.h"
 #include "../common/game_clock.h"
 #include "../common/tank.h"
 #include "../common/network.h"
@@ -17,6 +16,7 @@ typedef struct
 typedef struct
 {
     GameClock game_clock;
+    bool is_game_clock_synced;
     uint32_t last_sent_input_id; // used for client side prediction
     Input input_buffer[INPUT_BUFFER_SIZE]; // used for client side prediction
     NetworkObjectProxy *remote_tank; // client controlled tank network object proxy
@@ -27,6 +27,8 @@ typedef struct
 void GameClient_Init(uint32_t network_id, Vector2 position);
 void GameClient_NextTick(void);
 unsigned int GameClient_GetCurrentTick(void);
+void GameClient_SyncGameClock(unsigned int tick);
+bool GameClient_IsGameClockSynchronized(void);
 ClientTank *GameClient_GetClientTank(void);
 int GameClient_SendInputMessage(Input *input);
 void GameClient_BufferInput(Input *input);

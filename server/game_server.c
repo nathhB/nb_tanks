@@ -126,10 +126,14 @@ NetworkObject *GameServer_CreateNetworkObject(NetworkObjectType type)
     network_object->id = game_server.next_network_id++;
     network_object->type = type;
     network_object->game_object = blueprint.create_game_object();
+    network_object->has_been_acked_once = false;
     network_object->is_snapshot_update_needed = blueprint.is_snapshot_update_needed;
     network_object->update_network_state = blueprint.update_network_state;
 
+    network_object->game_object->network_id = network_object->id;
+
     memset(&network_object->state, 0, sizeof(network_object->state));
+    memset(&network_object->state, 0, sizeof(network_object->last_acked_state));
 
     game_server.network_object_count++;
 

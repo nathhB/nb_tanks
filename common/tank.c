@@ -149,10 +149,11 @@ static void SpawnProjectile(Tank *tank)
     Projectile *projectile = &projectile_object->properties.projectile;
     Vector2 pos_offset = Vector2Scale(tank->turret_direction, 30);
 
-    projectile_object->update = Projectile_Update;
+    // projectile_object->update = Projectile_Update;
 
     projectile->position = Vector2Add(tank->position, pos_offset);
     projectile->rotation = tank->turret_rotation;
+    projectile->direction = AngleToDirection(tank->turret_rotation);
 
     LogDebug("Spawned projectile %d", net_object->id);
 }

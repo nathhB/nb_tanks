@@ -36,9 +36,10 @@ set(SERVER_SOURCES
     server/client.c
     server/game.c
     server/game_server.c
+    server/projectile.c
     server/network.c)
 
-add_compile_options(-Wall -Wextra -Wno-unused-parameter -Wno-unknown-pragmas -Wno-tautological-constant-out-of-range-compare)
+add_compile_options(-Wall -Wextra -Wno-unused-parameter -Wno-unknown-pragmas -Wno-tautological-constant-out-of-range-compare -Wno-type-limits -Wno-attributes)
 
 add_executable(client ${CLIENT_SOURCES} ${COMMON_SOURCES})
 add_executable(server ${SERVER_SOURCES} ${COMMON_SOURCES})
@@ -62,7 +63,7 @@ endif (WIN32)
 
 target_include_directories(client PUBLIC "${RAYLIB_INCLUDE_PATH}")
 target_include_directories(client PUBLIC "${NBNET_INCLUDE_PATH}")
-target_include_directories(server PUBLIC "${RAYLIB_INCLUDE_PATH}") # for raymath.h
+target_include_directories(server PUBLIC "${RAYLIB_INCLUDE_PATH}")
 target_include_directories(server PUBLIC "${NBNET_INCLUDE_PATH}")
 
 if (CMAKE_BUILD_TYPE MATCHES Debug)
@@ -73,4 +74,4 @@ if (CMAKE_BUILD_TYPE MATCHES Debug)
 endif (CMAKE_BUILD_TYPE MATCHES Debug)
 
 target_compile_definitions(client PRIVATE NB_TANKS_CLIENT)
-target_compile_definitions(server PRIVATE NB_TANKS_SERVER RAYMATH_STANDALONE)
+target_compile_definitions(server PRIVATE NB_TANKS_SERVER)

@@ -1,14 +1,14 @@
 #include "../common/game_object_manager.h"
-#include "../common/projectile.h"
 #include "network.h"
+#include "projectile.h"
 
 // tank
-static bool IsTankSnapshotUpdateNeeded(NetworkState *state, NetworkState *last_acked_state);
+static bool IsTankSnapshotUpdateNeeded(NetworkObject *network_object);
 static GameObject *CreateTankGameObject(void);
 static void UpdateTankNetworkState(GameObject *game_object, NetworkState *state);
 
 // projectile
-static bool IsProjectileSnapshotUpdateNeeded(NetworkState *state, NetworkState *last_acked_state);
+static bool IsProjectileSnapshotUpdateNeeded(NetworkObject *network_object);
 static GameObject *CreateProjectileGameObject(void);
 static void UpdateProjectileNetworkState(GameObject *game_object, NetworkState *state);
 
@@ -79,7 +79,7 @@ static GameObject *CreateTankGameObject(void)
     return game_object;
 }
 
-static bool IsTankSnapshotUpdateNeeded(NetworkState *state, NetworkState *last_acked_state)
+static bool IsTankSnapshotUpdateNeeded(NetworkObject *network_object)
 {
     return true;
 }
@@ -91,9 +91,9 @@ static void UpdateTankNetworkState(GameObject *game_object, NetworkState *state)
     state->tank.turret_rotation = game_object->properties.tank.turret_rotation;
 }
 
-static bool IsProjectileSnapshotUpdateNeeded(NetworkState *state, NetworkState *last_acked_state)
+static bool IsProjectileSnapshotUpdateNeeded(NetworkObject *network_object)
 {
-    return true;
+    return false;
 }
 
 static GameObject *CreateProjectileGameObject(void)
@@ -102,11 +102,13 @@ static GameObject *CreateProjectileGameObject(void)
 
     Projectile_Init(&game_object->properties.projectile);
 
+    game_object->update = Projectile_Update;
+    game_object->on_delete = Projectile_OnDelete;
+
     return game_object;
 }
 
 static void UpdateProjectileNetworkState(GameObject *game_object, NetworkState *state)
 {
-    state->projectile.position = game_object->properties.projectile.position;
-    state->projectile.rotation = game_object->properties.projectile.rotation;
+    // state->projectile.rotation = game_object->properties.projectile.rotation;
 }

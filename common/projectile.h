@@ -1,14 +1,14 @@
 #pragma once
 
-#include <raymath.h>
-
-#include "game_object.h"
+#include "raylib.h"
 
 typedef struct
 {
     Vector2 position;
+    Vector2 direction;
     Vector2 size;
-    int rotation;
+    unsigned int rotation;
+    unsigned int speed;
 } Projectile;
 
 void Projectile_Init(Projectile *projectile);

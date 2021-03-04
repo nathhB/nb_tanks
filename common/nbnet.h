@@ -2,6 +2,7 @@
 
 #include "memory_manager.h"
 #include "logging.h"
+#include "raylib.h"
 
 #define NBN_Allocator(size) MemoryManager_Alloc(MEM_NBNET, size)
 #define NBN_Deallocator(ptr) MemoryManager_Dealloc(MEM_NBNET, ptr)

@@ -5,8 +5,10 @@
 
 #define SEND_GAME_SNAPSHOTS_FREQUENCY 10 // per seconds
 
+typedef struct __NetworkObject NetworkObject;
+
 typedef GameObject *(*CreateGameObjectFunc)(void);
-typedef bool (*IsSnapshotUpdateNeededFunc)(NetworkState *, NetworkState *);
+typedef bool (*IsSnapshotUpdateNeededFunc)(NetworkObject *);
 typedef void (*UpdateNetworkStateFunc)(GameObject *, NetworkState *);
 
 typedef struct
@@ -16,15 +18,17 @@ typedef struct
     UpdateNetworkStateFunc update_network_state;
 } NetworkObjectBlueprint;
 
-typedef struct
+struct __NetworkObject
 {
     uint32_t id;
     NetworkObjectType type;
     GameObject *game_object;
     NetworkState state;
+    NetworkState last_acked_state;
+    bool has_been_acked_once;
     IsSnapshotUpdateNeededFunc is_snapshot_update_needed;
     UpdateNetworkStateFunc update_network_state;
-} NetworkObject;
+};
 
 int GameSnapshot_AddEvent(
         GameSnapshot *game_snapshot, NetworkEventType type, NetworkObject *network_object);

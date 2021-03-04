@@ -77,19 +77,16 @@ static void InterpolateRemoteTank(
 static GameObject *CreateRemoteProjectileGameObject(NetworkState *state)
 {
     GameObject *game_object = GameObjectManager_CreateGameObject();
+    ClientProjectile *cli_projectile = &game_object->properties.cli_projectile;
 
-    if (ClientProjectile_Init(&game_object->properties.cli_projectile) < 0)
+    if (ClientProjectile_Init(cli_projectile) < 0)
         return NULL;
 
-    OnRemoteProjectileUpdate(game_object, state);
+    cli_projectile->projectile.position = state->projectile.initial_position;
 
     return game_object;
 }
 
 static void OnRemoteProjectileUpdate(GameObject *projectile_object, NetworkState *state)
 {
-    Projectile *projectile = &projectile_object->properties.cli_projectile.projectile;
-
-    projectile->position = state->projectile.position;
-    projectile->rotation = state->projectile.rotation;
 }

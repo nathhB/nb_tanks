@@ -22,4 +22,6 @@ typedef struct
 void GameObjectManager_Init(void);
 GameObject *GameObjectManager_CreateGameObject(void);
 bool GameObjectManager_DeleteGameObject(GameObject *game_object);
-void GameObjectManager_UpdateGameObjects(void);
+bool GameObjectManager_DeleteGameObjectById(unsigned int id);
+GameObject *GameObjectManager_FindGameObjectById(unsigned int id);
+int GameObjectManager_UpdateGameObjects(void);

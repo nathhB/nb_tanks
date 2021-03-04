@@ -59,9 +59,9 @@ static void DebugSetWindowPosition(void)
         int cli_id = atoi(cli);
 
         if (cli_id == 1)
-            SetWindowPosition(0, 200);
+            SetWindowPosition(350, 200);
         else if (cli_id == 2)
-            SetWindowPosition(800, 200);
+            SetWindowPosition(1000, 200);
     }
 }
 

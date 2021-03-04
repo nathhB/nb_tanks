@@ -1,8 +1,8 @@
 #pragma once
 
-#include <raymath.h>
 #include <limits.h>
 
+#include "raylib.h"
 #include "nbnet.h"
 #include "input.h"
 
@@ -37,7 +37,7 @@ typedef struct
 
 typedef struct
 {
-    Vector2 position;
+    Vector2 initial_position;
     int rotation;
 } ProjectileNetworkState;
 
@@ -57,10 +57,36 @@ typedef struct
 
 enum
 {
+    CLIENT_GAME_CLOCK_SYNC_MESSAGE,
+    SERVER_GAME_CLOCK_SYNC_MESSAGE,
     INPUT_MESSAGE,
     GAME_SNAPSHOT_MESSAGE,
     ACK_GAME_SNAPSHOT_MESSAGE
 };
+
+// Game clock synchronization messages
+
+typedef struct
+{
+    unsigned int tick;
+} ClientGameClockSyncMessage;
+
+typedef struct
+{
+    unsigned int client_tick;
+    unsigned int server_tick;
+} ServerGameClockSyncMessage;
+
+BEGIN_MESSAGE(ClientGameClockSyncMessage)
+    SERIALIZE_UINT(msg->tick, 0, UINT_MAX);
+END_MESSAGE
+
+BEGIN_MESSAGE(ServerGameClockSyncMessage)
+    SERIALIZE_UINT(msg->client_tick, 0, UINT_MAX);
+    SERIALIZE_UINT(msg->server_tick, 0, UINT_MAX);
+END_MESSAGE
+
+// ------------------------------
 
 typedef struct
 {

@@ -103,6 +103,7 @@ int GameScene_OnDraw(double alpha)
 
     DrawText(TextFormat("Ping: %d ms", (int)(stats.ping * 1000)), 0, 0, 16, WHITE);
     DrawText(TextFormat("Packet loss: %d %%", (int)(stats.packet_loss * 100)), 0, 20, 16, WHITE);
+    DrawText(TextFormat("Tick: %d", GameClient_GetCurrentTick()), 0, 40, 16, WHITE);
 
     return 0;
 }

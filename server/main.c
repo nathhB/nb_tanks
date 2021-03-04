@@ -16,10 +16,11 @@ static int SimulateTick(Input *input, double dt);
 static int HandleNewConnection(void);
 static void HandleClientDisconnection(void);
 static int HandleClientMessage(void);
-static int HandleInputMessage(InputMessage *input_message, Client *client);
-static int HandleAckGameSnapshotMessage(AckGameSnapshotMessage *ack_gsnap_message, Client *client);
+static int HandleClientGameClockSyncMessage(ClientGameClockSyncMessage *msg, Client *client);
+static int HandleInputMessage(InputMessage *msg, Client *client);
+static int HandleAckGameSnapshotMessage(AckGameSnapshotMessage *msg, Client *client);
+static int SendServerGameClockSyncMessage(unsigned int tick, Client *client);
 static int SendGameSnapshots(void);
-// static void BuildPlayerNetworkState(NetworkState *state, Client *client);
 
 static double game_time = 0;
 static double last_sent_game_snapshots_time = 0;
@@ -37,6 +38,8 @@ int main(void)
     NBN_GameServer_Init(PROTOCOL_NAME, PORT);
     NBN_GameServer_EnableEncryption();
 
+    NBN_GameServer_RegisterMessage(CLIENT_GAME_CLOCK_SYNC_MESSAGE, ClientGameClockSyncMessage);
+    NBN_GameServer_RegisterMessage(SERVER_GAME_CLOCK_SYNC_MESSAGE, ServerGameClockSyncMessage);
     NBN_GameServer_RegisterMessage(INPUT_MESSAGE, InputMessage);
     NBN_GameServer_RegisterMessage(GAME_SNAPSHOT_MESSAGE, GameSnapshotMessage);
     NBN_GameServer_RegisterMessage(ACK_GAME_SNAPSHOT_MESSAGE, AckGameSnapshotMessage);
@@ -202,7 +205,12 @@ static int HandleClientMessage(void)
         return 0;
     }
 
-    if (msg_info.type == INPUT_MESSAGE)
+    if (msg_info.type == CLIENT_GAME_CLOCK_SYNC_MESSAGE)
+    {
+        if (HandleClientGameClockSyncMessage(msg_info.data, client) < 0)
+            return -1;
+    }
+    else if (msg_info.type == INPUT_MESSAGE)
     {
         if (HandleInputMessage(msg_info.data, client) < 0)
             return -1;
@@ -218,16 +226,39 @@ static int HandleClientMessage(void)
     return 0;
 }
 
-static int HandleInputMessage(InputMessage *input_message, Client *client)
+static int HandleClientGameClockSyncMessage(ClientGameClockSyncMessage *msg, Client *client)
 {
-    Client_AddInput(client, &input_message->input);
+    if (SendServerGameClockSyncMessage(msg->tick, client) < 0)
+        return -1;
 
     return 0;
 }
 
-static int HandleAckGameSnapshotMessage(AckGameSnapshotMessage *ack_gsnap_message, Client *client)
+static int HandleInputMessage(InputMessage *msg, Client *client)
 {
-    Client_AckGameSnapshot(client, ack_gsnap_message->id);
+    Client_AddInput(client, &msg->input);
+
+    return 0;
+}
+
+static int HandleAckGameSnapshotMessage(AckGameSnapshotMessage *msg, Client *client)
+{
+    Client_AckGameSnapshot(client, msg->id);
+
+    return 0;
+}
+
+static int SendServerGameClockSyncMessage(unsigned int tick, Client *client)
+{
+    ServerGameClockSyncMessage *msg = NBN_GameServer_CreateReliableMessage(SERVER_GAME_CLOCK_SYNC_MESSAGE);
+
+    if (!msg)
+        return -1;
+
+    msg->client_tick = tick;
+    msg->server_tick = GameServer_GetCurrentTick();
+
+    NBN_GameServer_SendMessageTo(client->connection);
 
     return 0;
 }
@@ -263,12 +294,3 @@ static int SendGameSnapshots(void)
 
     return 0;
 }
-
-/*static void BuildPlayerNetworkState(NetworkState *state, Client *client)
-{
-    state->id = client->tank.network_id;
-    state->type = NETWORK_PLAYER;
-    state->state.player.position = client->tank.position;
-    state->state.player.rotation = client->tank.rotation;
-    state->state.player.turret_rotation = client->tank.turret_rotation;
-}*/

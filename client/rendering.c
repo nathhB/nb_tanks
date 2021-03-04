@@ -1,6 +1,7 @@
 #include <string.h>
 
 #include "rendering.h"
+#include "../common/raylib.h"
 #include "../common/logging.h"
 #include "../common/assertion.h"
 #include "../common/util.h"

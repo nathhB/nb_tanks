@@ -68,8 +68,8 @@ static int SerializeTankNetworkState(TankNetworkState *state, NBN_Stream *stream
 
 static int SerializeProjectileNetworkState(ProjectileNetworkState *state, NBN_Stream *stream)
 {
-    SERIALIZE_FLOAT(state->position.x, 0, MAX_POSITION_X, 2);
-    SERIALIZE_FLOAT(state->position.y, 0, MAX_POSITION_Y, 2);
+    SERIALIZE_FLOAT(state->initial_position.x, 0, MAX_POSITION_X, 2);
+    SERIALIZE_FLOAT(state->initial_position.y, 0, MAX_POSITION_Y, 2);
 
     SERIALIZE_UINT(state->rotation, 0, 360);
 

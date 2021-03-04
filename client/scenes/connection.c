@@ -1,12 +1,13 @@
-#include <raymath.h>
-
 #include "../scenes.h"
 #include "../../common/network.h"
 #include "../../common/scene_manager.h"
 #include "../../common/game_object_manager.h"
 #include "../game_client.h"
 
+static int HandleMessage(void);
+static int SendClientGameClockSyncMessage(void);
 static void OnConnected(void);
+static void OnGameClockSynchronized(void);
 static void Error(void);
 
 static bool error;
@@ -16,9 +17,12 @@ void ConnectionScene_OnEnter(void)
     error = false;
 
     LogDebug("Initialize game client");
+
     NBN_GameClient_Init(PROTOCOL_NAME, "127.0.0.1", PORT);
     NBN_GameClient_EnableEncryption();
 
+    NBN_GameClient_RegisterMessage(CLIENT_GAME_CLOCK_SYNC_MESSAGE, ClientGameClockSyncMessage);
+    NBN_GameClient_RegisterMessage(SERVER_GAME_CLOCK_SYNC_MESSAGE, ServerGameClockSyncMessage);
     NBN_GameClient_RegisterMessage(INPUT_MESSAGE, InputMessage);
     NBN_GameClient_RegisterMessage(GAME_SNAPSHOT_MESSAGE, GameSnapshotMessage);
     NBN_GameClient_RegisterMessage(ACK_GAME_SNAPSHOT_MESSAGE, AckGameSnapshotMessage);
@@ -67,8 +71,16 @@ int ConnectionScene_OnSimulate(Input *input, double dt)
             {
                 LogError("Failed to connect: server cannot be reached");
                 Error();
-            break;
+
                 break;
+            }
+            else if (ev == NBN_MESSAGE_RECEIVED)
+            {
+                if (HandleMessage() < 0)
+                {
+                    LogError("Failed to connect: an error occured while processing a received message");
+                    Error();
+                }
             }
         }
 
@@ -87,6 +99,41 @@ int ConnectionScene_OnDraw(double alpha)
     return 0;
 }
 
+static int HandleMessage(void)
+{
+    NBN_MessageInfo msg_info = NBN_GameClient_GetReceivedMessageInfo();
+
+    if (msg_info.type == SERVER_GAME_CLOCK_SYNC_MESSAGE)
+    {
+        ServerGameClockSyncMessage *msg = msg_info.data;
+
+        unsigned int rtt = GameClient_GetCurrentTick() - msg->client_tick;
+        unsigned int server_tick = msg->server_tick + (rtt / 2);
+
+        GameClient_SyncGameClock(server_tick);
+        OnGameClockSynchronized();
+    }
+
+    NBN_GameClient_DestroyMessage(msg_info.type, msg_info.data); 
+
+    return 0;
+}
+
+static int SendClientGameClockSyncMessage(void)
+{
+    ClientGameClockSyncMessage *msg = NBN_GameClient_CreateReliableMessage(CLIENT_GAME_CLOCK_SYNC_MESSAGE);
+
+    if (!msg)
+        return -1;
+
+    msg->tick = GameClient_GetCurrentTick();
+
+    if (NBN_GameClient_SendMessage() < 0)
+        return -1;
+
+    return 0;
+}
+
 static void OnConnected(void)
 {
     NBN_AcceptData *data = NBN_GameClient_GetAcceptData();
@@ -97,6 +144,21 @@ static void OnConnected(void)
 
     GameObjectManager_Init();
     GameClient_Init(network_id, spawn_pos);
+
+    LogInfo("Synchronizing game clock...");
+
+    if (SendClientGameClockSyncMessage())
+    {
+        LogError("Failed to connect: failed to send ClientGameClockSyncMessage message");
+
+        Error();
+    }
+}
+
+static void OnGameClockSynchronized(void)
+{
+    LogInfo("Game clock synchronized (tick: %d)", GameClient_GetCurrentTick());
+
     SceneManager_ChangeScene(GAME_SCENE);
 }
 

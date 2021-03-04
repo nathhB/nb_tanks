@@ -46,6 +46,7 @@ GameObject *GameObjectManager_CreateGameObject(void)
 
     game_object->id = go_manager.next_object_id++;
     game_object->update = NULL;
+    game_object->on_delete = NULL;
 
     memset(&game_object->properties, 0, sizeof(game_object->properties));
 
@@ -62,6 +63,9 @@ bool GameObjectManager_DeleteGameObject(GameObject *game_object)
 
         if (slot->is_active && slot->object.id == game_object->id)
         {
+            if (game_object->on_delete)
+                game_object->on_delete(game_object);
+
             slot->is_active = false;
             go_manager.game_object_count--;
 
@@ -72,13 +76,47 @@ bool GameObjectManager_DeleteGameObject(GameObject *game_object)
     return false;
 }
 
-void GameObjectManager_UpdateGameObjects(void)
+bool GameObjectManager_DeleteGameObjectById(unsigned int id)
+{
+    GameObject *game_object = GameObjectManager_FindGameObjectById(id);
+
+    if (!game_object)
+        return false;
+
+    return GameObjectManager_DeleteGameObject(game_object);
+}
+
+GameObject *GameObjectManager_FindGameObjectById(unsigned int id)
+{
+    for (unsigned int i = 0; i < MAX_GAME_OBJECTS; i++)
+    {
+        GameObjectSlot *slot = &go_manager.game_objects[i];
+
+        if (slot->is_active && slot->object.id == id)
+            return &slot->object;
+    }
+
+    return NULL;
+}
+
+int GameObjectManager_UpdateGameObjects(void)
 {
     for (unsigned int i = 0; i < MAX_GAME_OBJECTS; i++)
     {
         GameObjectSlot *slot = &go_manager.game_objects[i];
 
         if (slot->is_active && slot->object.update)
-            slot->object.update(&slot->object);
+        {
+            GameObject *game_object = &slot->object;
+
+            if (game_object->update(game_object) < 0)
+            {
+                LogError("Failed to update game object %d", game_object->id);
+
+                return -1;
+            }
+        }
     }
+
+    return 0;
 }
