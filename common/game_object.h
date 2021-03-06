@@ -2,7 +2,7 @@
 
 #ifdef NB_TANKS_SERVER
 
-#include "tank.h"
+#include "../server/tank.h"
 #include "projectile.h"
 
 #endif
@@ -16,7 +16,7 @@
 
 typedef struct __GameObject GameObject;
 
-typedef int (*GameObjectUpdateFunc)(GameObject *);
+typedef int (*GameObjectUpdateFunc)(GameObject *, unsigned int);
 typedef void (*GameObjectOnDeleteFunc)(GameObject *);
 
 struct __GameObject
@@ -34,7 +34,7 @@ struct __GameObject
 #endif
 
 #ifdef NB_TANKS_SERVER
-        Tank tank;
+        ServerTank serv_tank;
         Projectile projectile;
 #endif
     } properties;

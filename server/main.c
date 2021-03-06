@@ -101,7 +101,6 @@ static int SimulateTick(Input *input, double dt)
     }
 
     SimulateGameTick();
-    GameServer_UpdateAllNetworkStates();
 
     if (game_time - last_sent_game_snapshots_time >= send_game_snapshots_dt)
     {
@@ -164,10 +163,6 @@ static int HandleNewConnection(void)
     NBN_AcceptData *data = NBN_AcceptData_Create(); 
 
     NBN_AcceptData_WriteUInt(data, client->network_tank_object->id); // send network id of client controlled tank
-
-    // send spawn position on connection
-    NBN_AcceptData_WriteUInt(data, client->tank_object->properties.tank.position.x);
-    NBN_AcceptData_WriteUInt(data, client->tank_object->properties.tank.position.y);
 
     NBN_GameServer_AcceptIncomingConnection(data);
 

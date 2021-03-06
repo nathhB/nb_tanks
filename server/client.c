@@ -15,11 +15,10 @@ Client *Client_Create(NBN_Connection *connection)
 
     client->connection = connection;
     client->network_tank_object = NULL;
-    client->tank_object = NULL;
     client->next_game_snapshot_id = 0;
     client->next_input_id = 0;
     client->next_consume_input_id = 0;
-    client->last_processed_input_id = 0;
+    client->last_processed_client_tick = 0;
     client->last_acked_game_snapshot_id = 0;
 
     memset(client->input_buffer, 0, sizeof(client->input_buffer));
@@ -35,11 +34,7 @@ void Client_Destroy(Client *client)
 
 void Client_AddInput(Client *client, Input *input)
 {
-    // LogDebug("Add input: %d", input->id);
-
     unsigned int slot_id = client->next_input_id % INPUT_BUFFER_SIZE;
-
-    // LogDebug("Got input: %d (slot: %d)", input->keys, slot_id);
 
     memcpy(&client->input_buffer[slot_id], input, sizeof(Input));
 
@@ -53,16 +48,14 @@ bool Client_ConsumeNextInput(Client *client, Input *res_input)
 {
     Input *input = &client->input_buffer[client->next_consume_input_id % INPUT_BUFFER_SIZE];
 
-    // LogDebug("Consume input: %d (slot: %d)", input->keys, client->last_processed_input_id % INPUT_BUFFER_SIZE);
-
-    if (input->id < client->last_processed_input_id)
+    if (input->client_tick < client->last_processed_client_tick)
     {
         LogWarning("Received inconsistent input from client %d", client->connection->id);
 
         return false;
     }
 
-    memcpy(res_input, input, sizeof(Input));
+    memcpy(&client->current_input, input, sizeof(Input));
 
     client->next_consume_input_id++;
 
@@ -84,7 +77,7 @@ GameSnapshot *Client_CreateGameSnapshot(Client *client)
 
     GameSnapshot_Init(game_snapshot, id);
 
-    game_snapshot->last_processed_input_id = client->last_processed_input_id; 
+    game_snapshot->last_processed_client_tick = client->last_processed_client_tick; 
 
     if (AddUpdateEventsToGameSnapshot(client, game_snapshot) < 0)
     {
@@ -140,11 +133,12 @@ static int AddUpdateEventsToGameSnapshot(Client *client, GameSnapshot *game_snap
     for (unsigned int i = 0; i < object_count; i++)
     {
         NetworkObject *network_object = network_objects[i];
-        bool is_update_needed =
-            !network_object->has_been_acked_once || network_object->is_snapshot_update_needed(network_object);
+        bool is_update_needed = network_object->is_snapshot_update_needed(client->connection->id, network_object);
 
         if (is_update_needed)
         {
+            network_object->update_network_state(network_object->game_object, &network_object->state);
+
             if (GameSnapshot_AddEvent(game_snapshot, NETWORK_EV_UPDATE, network_object) < 0)
                 return -1;
         }

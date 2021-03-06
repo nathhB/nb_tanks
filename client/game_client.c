@@ -15,16 +15,17 @@ static bool GetInterpolationStates(
         InterpolationState *state1,
         InterpolationState *state2);
 
-void GameClient_Init(uint32_t network_id, Vector2 position)
+void GameClient_Init(uint32_t network_id)
 {
-    game_client.last_sent_input_id = 0;
+    game_client.local_tank_network_id = network_id;
+    game_client.last_sent_input_tick = 0;
     game_client.remote_object_count = 0;
     game_client.game_clock.tick = 0;
     game_client.is_game_clock_synced = false;
 
     memset(game_client.remote_objects, 0, sizeof(game_client.remote_objects));
 
-    game_client.remote_tank = GameClient_CreateRemoteObject(network_id, NETWORK_TANK, true);
+    // game_client.remote_tank = GameClient_CreateRemoteObject(network_id, NETWORK_TANK, true);
 }
 
 void GameClient_NextTick(void)
@@ -35,6 +36,11 @@ void GameClient_NextTick(void)
 unsigned int GameClient_GetCurrentTick(void)
 {
     return game_client.game_clock.tick;
+}
+
+unsigned int GameClient_GetLocalTankNetworkId(void)
+{
+    return game_client.local_tank_network_id;
 }
 
 void GameClient_SyncGameClock(unsigned int tick)
@@ -48,9 +54,9 @@ bool GameClient_IsGameClockSynchronized(void)
     return game_client.is_game_clock_synced;
 }
 
-ClientTank *GameClient_GetClientTank(void)
+GameObject *GameClient_GetClientTank(void)
 {
-    return &game_client.remote_tank->game_object->properties.cli_tank;
+    return game_client.remote_tank->game_object;
 }
 
 int GameClient_SendInputMessage(Input *input)
@@ -65,14 +71,14 @@ int GameClient_SendInputMessage(Input *input)
     if (NBN_GameClient_SendMessage() < 0)
         return -1;
 
-    game_client.last_sent_input_id = input->id;
+    game_client.last_sent_input_tick = input->client_tick;
 
     return 0;
 }
 
 void GameClient_BufferInput(Input *input)
 {
-    memcpy(&game_client.input_buffer[input->id % INPUT_BUFFER_SIZE], input, sizeof(Input));
+    memcpy(&game_client.input_buffer[input->client_tick % INPUT_BUFFER_SIZE], input, sizeof(Input));
 }
 
 unsigned int GameClient_GetPredictionInputs(
@@ -82,7 +88,7 @@ unsigned int GameClient_GetPredictionInputs(
 
     for (
             unsigned int i = last_server_processed_input_id + 1;
-            i <= game_client.last_sent_input_id && input_count < INPUT_BUFFER_SIZE;
+            i <= game_client.last_sent_input_tick && input_count < INPUT_BUFFER_SIZE;
             i++, input_count++)
     {
         inputs[input_count] = game_client.input_buffer[i % INPUT_BUFFER_SIZE];
@@ -91,8 +97,10 @@ unsigned int GameClient_GetPredictionInputs(
     return input_count;
 }
 
-NetworkObjectProxy *GameClient_CreateRemoteObject(unsigned int network_id, NetworkObjectType type, bool predicted)
+NetworkObjectProxy *GameClient_CreateRemoteObject(unsigned int network_id, NetworkObjectType type, NetworkState *state)
 {
+    bool is_local_tank = network_id == game_client.local_tank_network_id;
+
     if (game_client.remote_object_count >= MAX_NETWORK_OBJECTS)
     {
         LogError("Cannot create a new remote object: the maximum number of remote objects has been reached");
@@ -131,14 +139,14 @@ NetworkObjectProxy *GameClient_CreateRemoteObject(unsigned int network_id, Netwo
         return NULL;
     }
 
-    memset(&remote_object->state, 0, sizeof(remote_object->state));
+    memcpy(&remote_object->state, state, sizeof(NetworkState));
     memset(&remote_object->lag_compensation, 0, sizeof(remote_object->lag_compensation));
 
     remote_object->id = network_id;
     remote_object->type = type;
-    remote_object->game_object = blueprint.create_game_object(&remote_object->state);
+    remote_object->game_object = blueprint.create_game_object(remote_object);
     remote_object->on_state_update = blueprint.on_state_update;
-    remote_object->lag_compensation_policy = predicted ? LAG_COMPENSATION_NONE : blueprint.lag_compensation_policy;  
+    remote_object->lag_compensation_policy = is_local_tank ? LAG_COMPENSATION_NONE : blueprint.lag_compensation_policy;  
 
     remote_object->game_object->network_id = network_id;
 
@@ -147,6 +155,9 @@ NetworkObjectProxy *GameClient_CreateRemoteObject(unsigned int network_id, Netwo
         remote_object->lag_compensation.interpolation.interpolation_func =
             blueprint.lag_compensation.interpolation_func;
     }
+
+    if (is_local_tank)
+        game_client.remote_tank = remote_object;
 
     game_client.remote_object_count++;
 
@@ -260,6 +271,16 @@ int GameClient_ProcessGameSnapshot(GameSnapshot *game_snapshot)
     return 0;
 }
 
+void GameClient_SetCurrentInput(Input *input)
+{
+    memcpy(&game_client.current_input, input, sizeof(Input));
+}
+
+Input *GameClient_GetCurrentInput(void)
+{
+    return &game_client.current_input;
+}
+
 static int HandleNetworkEvent(NetworkEvent *network_event)
 {
     if (network_event->type == NETWORK_EV_UPDATE)
@@ -282,15 +303,17 @@ static int HandleNetworkObjectUpdate(unsigned int id, NetworkObjectType type, Ne
 
     if (!remote_object)
     {
-        remote_object = GameClient_CreateRemoteObject(id, type, false);
+        remote_object = GameClient_CreateRemoteObject(id, type, state);
 
         if (!remote_object)
             return -1;
 
         LogDebug("Created remote object %d of type %d", id, type);
     }
-
-    UpdateRemoteObjectState(remote_object, state);
+    else
+    {
+        UpdateRemoteObjectState(remote_object, state);
+    }
 
     return 0;
 }

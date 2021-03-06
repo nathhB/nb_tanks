@@ -14,9 +14,11 @@ static void DrawTurret(Vector2 position, int rotation, ClientTank *cli_tank);
 static void BuildCoreRenderingState(RenderingState *state, ClientTank *cli_tank);
 static void BuildTurretRenderingState(RenderingState *state, ClientTank *cli_tank);
 
-int ClientTank_Init(ClientTank *cli_tank)
+int ClientTank_Init(ClientTank *cli_tank, bool is_local)
 {
     Tank_Init(&cli_tank->tank);
+
+    cli_tank->is_local = is_local;
 
     cli_tank->core_sprite = GetSprite(ATLAS_ASSET, "tankBody_green");
     cli_tank->turret_sprite = GetSprite(ATLAS_ASSET, "tankGreen_barrel2_outline");
@@ -45,12 +47,18 @@ static int CreateRenderers(ClientTank *cli_tank)
 
 static int CreateCoreRenderer(ClientTank *cli_tank)
 {
-    return CreateRenderer((RenderFunc)DrawCore, (BuildRenderingStateFunc)BuildCoreRenderingState, cli_tank);
+    if (!CreateRenderer((RenderFunc)DrawCore, (BuildRenderingStateFunc)BuildCoreRenderingState, cli_tank))
+        return -1;
+
+    return 0;
 }
 
 static int CreateTurretRenderer(ClientTank *cli_tank)
 {
-    return CreateRenderer((RenderFunc)DrawTurret, (BuildRenderingStateFunc)BuildTurretRenderingState, cli_tank);
+    if (!CreateRenderer((RenderFunc)DrawTurret, (BuildRenderingStateFunc)BuildTurretRenderingState, cli_tank))
+        return -1;
+
+    return 0;
 }
 
 static void DrawCore(Vector2 position, int rotation, ClientTank *cli_tank)

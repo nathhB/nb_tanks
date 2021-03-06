@@ -5,8 +5,6 @@
 #include "client.h"
 #include "game_server.h"
 
-static int SimulateClient(Client *client, Input *input);
-
 int SimulateGameTick(void)
 {
     ListNode *current = GameServer_GetClients()->head;
@@ -16,24 +14,13 @@ int SimulateGameTick(void)
         Client *client = current->data;
         Input client_input;
 
-        if (Client_ConsumeNextInput(client, &client_input))
-            SimulateClient(client, &client_input);
+        Client_ConsumeNextInput(client, &client_input);
 
         current = current->next;
     }
 
-    if (GameObjectManager_UpdateGameObjects() < 0)
+    if (GameObjectManager_UpdateGameObjects(GameServer_GetCurrentTick()) < 0)
         return -1;
-
-    return 0;
-}
-
-static int SimulateClient(Client *client, Input *input)
-{
-    Tank_ProcessInputs(&client->tank_object->properties.tank, input, GameServer_GetCurrentTick());
-    // LogDebug("%f %f", client->tank.position.x, client->tank.position.y);
-    // LogDebug("Process input: %d", input->id);
-    client->last_processed_input_id = input->id;
 
     return 0;
 }

@@ -33,4 +33,3 @@ NetworkObject *GameServer_CreateNetworkObject(NetworkObjectType type);
 bool GameServer_DeleteNetworkObject(unsigned int network_id);
 unsigned int GameServer_GetNetworkObjects(NetworkObject *network_objects[MAX_NETWORK_OBJECTS]);
 NetworkObject *GameServer_FindNetworkObjectById(unsigned int network_id);
-void GameServer_UpdateAllNetworkStates(void);

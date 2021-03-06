@@ -11,7 +11,9 @@ set(COMMON_SOURCES
     common/htable.c
     common/nbnet_impl.c
     common/tank.c
+    common/tank_control.c
     common/projectile.c
+    common/projectile_update.c
     common/network.c
     common/util.c
     common/game_object_manager.c
@@ -36,7 +38,6 @@ set(SERVER_SOURCES
     server/client.c
     server/game.c
     server/game_server.c
-    server/projectile.c
     server/network.c)
 
 add_compile_options(-Wall -Wextra -Wno-unused-parameter -Wno-unknown-pragmas -Wno-tautological-constant-out-of-range-compare -Wno-type-limits -Wno-attributes)

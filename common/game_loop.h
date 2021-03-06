@@ -2,7 +2,7 @@
 
 #include "input.h"
 
-#define TICKS_PER_SECOND 30
+#define TICKS_PER_SECOND 60
 
 typedef int (*SimulateTickCallback)(Input *, double dt);
 typedef int (*DrawCallback)(double alpha);

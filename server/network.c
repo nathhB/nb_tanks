@@ -1,14 +1,15 @@
 #include "../common/game_object_manager.h"
+#include "../common/tank_control.h"
+#include "../common/projectile_update.h"
 #include "network.h"
-#include "projectile.h"
 
 // tank
-static bool IsTankSnapshotUpdateNeeded(NetworkObject *network_object);
+static bool IsTankSnapshotUpdateNeeded(unsigned int client_id, NetworkObject *network_object);
 static GameObject *CreateTankGameObject(void);
 static void UpdateTankNetworkState(GameObject *game_object, NetworkState *state);
 
 // projectile
-static bool IsProjectileSnapshotUpdateNeeded(NetworkObject *network_object);
+static bool IsProjectileSnapshotUpdateNeeded(unsigned int client_id, NetworkObject *network_object);
 static GameObject *CreateProjectileGameObject(void);
 static void UpdateProjectileNetworkState(GameObject *game_object, NetworkState *state);
 
@@ -74,26 +75,40 @@ static GameObject *CreateTankGameObject(void)
 {
     GameObject *game_object = GameObjectManager_CreateGameObject();
 
-    Tank_Init(&game_object->properties.tank);
+    game_object->update = Tank_Update;
+
+    Tank_Init(&game_object->properties.serv_tank.tank);
 
     return game_object;
 }
 
-static bool IsTankSnapshotUpdateNeeded(NetworkObject *network_object)
+static bool IsTankSnapshotUpdateNeeded(unsigned int client_id, NetworkObject *network_object)
 {
     return true;
 }
 
 static void UpdateTankNetworkState(GameObject *game_object, NetworkState *state)
 {
-    state->tank.position = game_object->properties.tank.position;
-    state->tank.rotation = game_object->properties.tank.rotation;
-    state->tank.turret_rotation = game_object->properties.tank.turret_rotation;
+    state->tank.position = game_object->properties.serv_tank.tank.position;
+    state->tank.rotation = game_object->properties.serv_tank.tank.rotation;
+    state->tank.turret_rotation = game_object->properties.serv_tank.tank.turret_rotation;
 }
 
-static bool IsProjectileSnapshotUpdateNeeded(NetworkObject *network_object)
+static bool IsProjectileSnapshotUpdateNeeded(unsigned int client_id, NetworkObject *network_object)
 {
-    return false;
+    unsigned int shooter_client_id = network_object->game_object->properties.projectile.shooter_client_id;
+
+    // LogDebug("TOTO: %d", shooter_client_id);
+
+    // don't send projectile snapshots to the client that shot it
+    if (shooter_client_id == client_id)
+        return false;
+
+    // send projectile snapshots until one has been acked
+    if (network_object->has_been_acked_once)
+        return false;
+
+    return true;
 }
 
 static GameObject *CreateProjectileGameObject(void)
@@ -110,5 +125,9 @@ static GameObject *CreateProjectileGameObject(void)
 
 static void UpdateProjectileNetworkState(GameObject *game_object, NetworkState *state)
 {
-    // state->projectile.rotation = game_object->properties.projectile.rotation;
+    Projectile *projectile = &game_object->properties.projectile;
+
+    state->projectile.spawn_position = projectile->spawn_position;
+    state->projectile.rotation = projectile->rotation;
+    state->projectile.spawn_tick = projectile->spawn_tick;
 }

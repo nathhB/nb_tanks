@@ -4,6 +4,8 @@
 #include "../../common/scene_manager.h"
 #include "../../common/assertion.h"
 #include "../../common/util.h"
+#include "../../common/game_object_manager.h"
+#include "../../common/tank_control.h"
 #include "../scenes.h"
 #include "../game_client.h"
 #include "../tank.h"
@@ -68,7 +70,7 @@ int GameScene_OnSimulate(Input *input, double dt)
     if (disconnected)
         return 0;
 
-    input->id = GameClient_GetCurrentTick();
+    input->client_tick = GameClient_GetCurrentTick();
 
     SimulateGameTick(input);
     GameClient_InterpolateRemoteObjects();
@@ -110,7 +112,8 @@ int GameScene_OnDraw(double alpha)
 
 static void SimulateGameTick(Input *input)
 {
-    Tank_ProcessInputs(&GameClient_GetClientTank()->tank, input, GameClient_GetCurrentTick());
+    GameClient_SetCurrentInput(input);
+    GameObjectManager_UpdateGameObjects(GameClient_GetCurrentTick());
 }
 
 static int HandleMessage(void)
@@ -139,7 +142,7 @@ static int HandleGameSnapshot(GameSnapshot *game_snapshot)
         return -1;
     } 
 
-    if (RunClientSidePrediction(game_snapshot->last_processed_input_id) < 0)
+    if (RunClientSidePrediction(game_snapshot->last_processed_client_tick) < 0)
         LogWarning("Client side prediction failed");
 
     if (GameClient_AckGameSnapshot(game_snapshot) < 0)
@@ -172,7 +175,7 @@ static int PredictInput(Input *input)
     // only predict directional keys
     input->keys &= ~INPUT_SPACE;
 
-    Tank_ProcessInputs(&GameClient_GetClientTank()->tank, input, 0);
+    Tank_ProcessInputs(GameClient_GetClientTank(), input, 0);
 
     return 0;
 }

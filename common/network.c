@@ -11,7 +11,7 @@ static int SerializeProjectileNetworkState(ProjectileNetworkState *state, NBN_St
 void GameSnapshot_Init(GameSnapshot *game_snapshot, uint32_t id)
 {
     game_snapshot->id = id;
-    game_snapshot->last_processed_input_id = 0;
+    game_snapshot->last_processed_client_tick = 0;
     game_snapshot->event_count = 0;
 
     memset(game_snapshot->events, 0, sizeof(game_snapshot->events));
@@ -20,7 +20,7 @@ void GameSnapshot_Init(GameSnapshot *game_snapshot, uint32_t id)
 int GameSnapshot_Serialize(GameSnapshot *game_snapshot, NBN_Stream *stream)
 {
     SERIALIZE_UINT(game_snapshot->id, 0, UINT_MAX);
-    SERIALIZE_UINT(game_snapshot->last_processed_input_id, 0, UINT_MAX);
+    SERIALIZE_UINT(game_snapshot->last_processed_client_tick, 0, UINT_MAX);
     SERIALIZE_UINT(game_snapshot->event_count, 0, MAX_NETWORK_EVENTS)
 
     for (unsigned int i = 0; i < game_snapshot->event_count; i++)
@@ -68,9 +68,10 @@ static int SerializeTankNetworkState(TankNetworkState *state, NBN_Stream *stream
 
 static int SerializeProjectileNetworkState(ProjectileNetworkState *state, NBN_Stream *stream)
 {
-    SERIALIZE_FLOAT(state->initial_position.x, 0, MAX_POSITION_X, 2);
-    SERIALIZE_FLOAT(state->initial_position.y, 0, MAX_POSITION_Y, 2);
+    SERIALIZE_FLOAT(state->spawn_position.x, 0, MAX_POSITION_X, 2);
+    SERIALIZE_FLOAT(state->spawn_position.y, 0, MAX_POSITION_Y, 2);
 
+    SERIALIZE_UINT(state->spawn_tick, 0, UINT_MAX);
     SERIALIZE_UINT(state->rotation, 0, 360);
 
     return 0;

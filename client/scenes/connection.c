@@ -11,10 +11,12 @@ static void OnGameClockSynchronized(void);
 static void Error(void);
 
 static bool error;
+static bool is_connected;
 
 void ConnectionScene_OnEnter(void)
 {
     error = false;
+    is_connected = false;
 
     LogDebug("Initialize game client");
 
@@ -89,6 +91,9 @@ int ConnectionScene_OnSimulate(Input *input, double dt)
             LogError("Failed to connect: failed to send packets");
             Error();
         }
+
+        if (is_connected)
+            GameClient_NextTick(); // once connected, start updating the clock for synchronization
     }
 
     return 0;
@@ -108,7 +113,9 @@ static int HandleMessage(void)
         ServerGameClockSyncMessage *msg = msg_info.data;
 
         unsigned int rtt = GameClient_GetCurrentTick() - msg->client_tick;
-        unsigned int server_tick = msg->server_tick + (rtt / 2);
+        unsigned int one_way = rtt / 2 + rtt % 2;
+        unsigned int server_tick = msg->server_tick + one_way;
+        LogDebug("RTT: %d | One way: %d", rtt, one_way);
 
         GameClient_SyncGameClock(server_tick);
         OnGameClockSynchronized();
@@ -138,12 +145,11 @@ static void OnConnected(void)
 {
     NBN_AcceptData *data = NBN_GameClient_GetAcceptData();
     uint32_t network_id = NBN_AcceptData_ReadUInt(data);
-    Vector2 spawn_pos = (Vector2){ NBN_AcceptData_ReadUInt(data), NBN_AcceptData_ReadUInt(data) };
 
-    LogInfo("Connected (network id: %d, spawned at (%f, %f))", network_id, spawn_pos.x, spawn_pos.y);
+    LogInfo("Connected (network id: %d)", network_id);
 
     GameObjectManager_Init();
-    GameClient_Init(network_id, spawn_pos);
+    GameClient_Init(network_id);
 
     LogInfo("Synchronizing game clock...");
 
@@ -153,6 +159,8 @@ static void OnConnected(void)
 
         Error();
     }
+
+    is_connected = true;
 }
 
 static void OnGameClockSynchronized(void)

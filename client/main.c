@@ -18,12 +18,13 @@ static int DrawTick(double alpha);
 int main(void)
 {
     InitWindow(640, 480, "Tanks");
+    SetConfigFlags(FLAG_WINDOW_ALWAYS_RUN);
 
 #ifdef DEBUG
     DebugSetWindowPosition();
 #endif
 
-    SetTargetFPS(60);
+    SetTargetFPS(100);
 
     MemoryManager_Init();
     MemoryManager_RegisterTag(MEM_NBNET, "NBN");
@@ -59,9 +60,9 @@ static void DebugSetWindowPosition(void)
         int cli_id = atoi(cli);
 
         if (cli_id == 1)
-            SetWindowPosition(350, 200);
+            SetWindowPosition(100, 200);
         else if (cli_id == 2)
-            SetWindowPosition(1000, 200);
+            SetWindowPosition(750, 200);
     }
 }
 

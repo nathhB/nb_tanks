@@ -3,6 +3,7 @@
 #include <stdbool.h>
 
 #include "game_object.h"
+#include "input.h"
 
 #define MAX_GAME_OBJECTS 1024
 
@@ -24,4 +25,4 @@ GameObject *GameObjectManager_CreateGameObject(void);
 bool GameObjectManager_DeleteGameObject(GameObject *game_object);
 bool GameObjectManager_DeleteGameObjectById(unsigned int id);
 GameObject *GameObjectManager_FindGameObjectById(unsigned int id);
-int GameObjectManager_UpdateGameObjects(void);
+int GameObjectManager_UpdateGameObjects(unsigned int tick);

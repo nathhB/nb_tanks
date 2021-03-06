@@ -37,7 +37,8 @@ typedef struct
 
 typedef struct
 {
-    Vector2 initial_position;
+    Vector2 spawn_position;
+    unsigned int spawn_tick;
     int rotation;
 } ProjectileNetworkState;
 
@@ -96,7 +97,7 @@ typedef struct
 typedef struct
 {
     uint32_t id;
-    uint32_t last_processed_input_id;
+    uint32_t last_processed_client_tick;
     unsigned int event_count;
     NetworkEvent events[MAX_NETWORK_EVENTS];
 } GameSnapshot;
@@ -117,7 +118,7 @@ int GameSnapshot_Serialize(GameSnapshot *game_snapshot, NBN_Stream *stream);
 // int SerializeNetworkObject(NetworkObject *object, NBN_Stream *stream);
 
 BEGIN_MESSAGE(InputMessage)
-    SERIALIZE_UINT(msg->input.id, 0, UINT_MAX);
+    SERIALIZE_UINT(msg->input.client_tick, 0, UINT_MAX);
     SERIALIZE_UINT(msg->input.keys, 0, UINT_MAX);
 END_MESSAGE
 

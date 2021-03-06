@@ -2,29 +2,44 @@
 #include "projectile.h"
 #include "assets.h"
 
-static int CreateProjectileRenderer(ClientProjectile *cli_projectile);
 static void Draw(Vector2 position, int rotation, ClientProjectile *cli_tank);
 static void BuildRenderingState(RenderingState *state, ClientProjectile *cli_projectile);
 
-int ClientProjectile_Init(ClientProjectile *cli_projectile)
+int ClientProjectile_Init(ClientProjectile *cli_projectile, bool is_local)
 {
     Projectile_Init(&cli_projectile->projectile);
 
-    cli_projectile->sprite = GetSprite(ATLAS_ASSET, "bulletGreen1_outline");
+    cli_projectile->is_local = is_local;
+    cli_projectile->is_catching_up = !is_local;
+    cli_projectile->catchup_tick = 0;
+    cli_projectile->interp_sync_tick = 0;
+    cli_projectile->renderer = NULL;
 
-    if (CreateProjectileRenderer(cli_projectile) < 0)
+    // don't display remote projectiles right away, wait for them to be synced with remote tank interpolation
+    if (is_local)
     {
-        LogError("Failed to create projectile renderer");
+        if (ClientProjectile_CreateRenderers(cli_projectile) < 0)
+        {
+            LogError("Failed to create projectile renderer");
 
-        return -1;
+            return -1;
+        }
     }
 
     return 0;
 }
 
-static int CreateProjectileRenderer(ClientProjectile *cli_projectile)
+int ClientProjectile_CreateRenderers(ClientProjectile *cli_projectile)
 {
-    return CreateRenderer((RenderFunc)Draw, (BuildRenderingStateFunc)BuildRenderingState, cli_projectile);
+    Renderer *renderer = CreateRenderer((RenderFunc)Draw, (BuildRenderingStateFunc)BuildRenderingState, cli_projectile);
+
+    if (!renderer)
+        return -1;
+
+    cli_projectile->renderer = renderer;
+    cli_projectile->sprite = GetSprite(ATLAS_ASSET, "bulletGreen1_outline");
+
+    return 0;
 }
 
 static void Draw(Vector2 position, int rotation, ClientProjectile *cli_projectile)

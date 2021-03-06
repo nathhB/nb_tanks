@@ -1,5 +1,6 @@
-#include "game_server.h"
 #include "../common/memory_manager.h"
+#include "tank.h"
+#include "game_server.h"
 
 static GameServer game_server;
 
@@ -33,9 +34,10 @@ int GameServer_AddNewClient(NBN_Connection *connection)
     if (!(client->network_tank_object = GameServer_CreateNetworkObject(NETWORK_TANK)))
         return -1;
 
-    client->tank_object = client->network_tank_object->game_object;
+    ServerTank *serv_tank = &client->network_tank_object->game_object->properties.serv_tank;
 
-    client->tank_object->properties.tank.position = (Vector2){ 200, 200 };
+    serv_tank->client_id = client->connection->id;
+    serv_tank->tank.position = (Vector2){ 200, 200 };
 
     List_PushBack(game_server.clients, client);
 
@@ -189,17 +191,4 @@ NetworkObject *GameServer_FindNetworkObjectById(unsigned int network_id)
     }
 
     return NULL;
-}
-
-void GameServer_UpdateAllNetworkStates(void)
-{
-    for (unsigned int i = 0; i < MAX_NETWORK_OBJECTS; i++)
-    {
-        if (game_server.network_objects[i].is_active)
-        {
-            NetworkObject *network_object = &game_server.network_objects[i].object;
-
-            network_object->update_network_state(network_object->game_object, &network_object->state);
-        }
-    }
 }

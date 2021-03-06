@@ -45,20 +45,21 @@ void RenderAll(double alpha)
                 rotation = current_state->rotation;
             }
 
-            renderer->render_func(position, rotation, renderer->data);
+            if (renderer->is_visible)
+                renderer->render_func(position, rotation, renderer->data);
 
             memcpy(&renderer->previous_state, current_state, sizeof(RenderingState));
         }
     }
 }
 
-int CreateRenderer(RenderFunc render_func, BuildRenderingStateFunc build_state_func, void *data)
+Renderer *CreateRenderer(RenderFunc render_func, BuildRenderingStateFunc build_state_func, void *data)
 {
     if (renderer_count >= MAX_RENDERERS)
     {
         LogError("Cannot create renderer: max number of renderers has been reached");
 
-        return -1;
+        return NULL;
     }
 
     Renderer *renderer = FindAvailableRenderer();
@@ -67,6 +68,7 @@ int CreateRenderer(RenderFunc render_func, BuildRenderingStateFunc build_state_f
 
     renderer->id = next_renderer_id++;
     renderer->is_active = true;
+    renderer->is_visible = true;
     renderer->data = data;
     renderer->render_func = render_func;
     renderer->build_state_func = build_state_func;
@@ -74,7 +76,7 @@ int CreateRenderer(RenderFunc render_func, BuildRenderingStateFunc build_state_f
     memset(&renderer->current_state, 0, sizeof(RenderingState));
     memset(&renderer->previous_state, 0, sizeof(RenderingState));
 
-    return 0;
+    return renderer;
 }
 
 static Renderer *FindAvailableRenderer(void)

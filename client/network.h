@@ -4,8 +4,8 @@
 #include "../common/game_object.h"
 
 #define INPUT_BUFFER_SIZE 16
-#define INTERPOLATION_BUFFER_SIZE 16
-#define INTERPOLATION_TICKS 6
+#define INTERPOLATION_BUFFER_SIZE 32
+#define INTERPOLATION_TICKS 8
 
 typedef enum
 {
@@ -30,7 +30,7 @@ typedef struct
 
 typedef struct __NetworkObjectProxy NetworkObjectProxy;
 typedef void (*OnNetworkStateUpdateFunc)(GameObject *, NetworkState *);
-typedef GameObject *(*CreateGameObjectFunc)(NetworkState *);
+typedef GameObject *(*CreateGameObjectFunc)(NetworkObjectProxy *);
 
 typedef struct
 {

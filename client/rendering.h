@@ -19,6 +19,7 @@ typedef struct
 {
     unsigned int id;
     bool is_active;
+    bool is_visible;
     void *data;
     RenderFunc render_func;
     BuildRenderingStateFunc build_state_func;
@@ -34,4 +35,4 @@ typedef struct
 
 void InitRendering(void);
 void RenderAll(double alpha);
-int CreateRenderer(RenderFunc render_func, BuildRenderingStateFunc build_state_func, void *data);
+Renderer *CreateRenderer(RenderFunc render_func, BuildRenderingStateFunc build_state_func, void *data);

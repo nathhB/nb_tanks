@@ -99,7 +99,7 @@ GameObject *GameObjectManager_FindGameObjectById(unsigned int id)
     return NULL;
 }
 
-int GameObjectManager_UpdateGameObjects(void)
+int GameObjectManager_UpdateGameObjects(unsigned int tick)
 {
     for (unsigned int i = 0; i < MAX_GAME_OBJECTS; i++)
     {
@@ -109,7 +109,7 @@ int GameObjectManager_UpdateGameObjects(void)
         {
             GameObject *game_object = &slot->object;
 
-            if (game_object->update(game_object) < 0)
+            if (game_object->update(game_object, tick) < 0)
             {
                 LogError("Failed to update game object %d", game_object->id);
 

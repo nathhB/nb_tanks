@@ -3,12 +3,14 @@
 #include "../common/network.h"
 #include "../common/game_object.h"
 
-#define SEND_GAME_SNAPSHOTS_FREQUENCY 10 // per seconds
+#define INPUT_BUFFER_SIZE 8
+#define GAME_SNAPSHOT_BUFFER_SIZE 16
+#define SEND_GAME_SNAPSHOTS_FREQUENCY 30 // per seconds
 
 typedef struct __NetworkObject NetworkObject;
 
 typedef GameObject *(*CreateGameObjectFunc)(void);
-typedef bool (*IsSnapshotUpdateNeededFunc)(NetworkObject *);
+typedef bool (*IsSnapshotUpdateNeededFunc)(unsigned int, NetworkObject *);
 typedef void (*UpdateNetworkStateFunc)(GameObject *, NetworkState *);
 
 typedef struct
