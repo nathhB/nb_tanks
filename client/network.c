@@ -91,23 +91,24 @@ static GameObject *CreateRemoteProjectileGameObject(NetworkObjectProxy *remote_o
     if (ClientProjectile_Init(cli_projectile, false) < 0)
         return NULL;
 
+    unsigned int interp_ticks = INTERPOLATION_TICKS - 2;
+
     // delay the remote projectile by the number of interpolated ticks
-    cli_projectile->interp_sync_tick = GameClient_GetCurrentTick() + INTERPOLATION_TICKS - 2;
+    cli_projectile->interp_sync_tick = GameClient_GetCurrentTick() + interp_ticks;
 
     cli_projectile->projectile.position = remote_object->state.projectile.spawn_position;
     cli_projectile->projectile.rotation = remote_object->state.projectile.rotation;
     cli_projectile->projectile.direction = AngleToDirection(remote_object->state.projectile.rotation); 
 
-    // compute catchup information to synchronize the remote projectile with the server
+    // compute catchup information to synchronize the client side projectile position with the server one
     unsigned int tick_offset = GameClient_GetCurrentTick() - remote_object->state.projectile.spawn_tick;
-    Vector2 catchup_position = Projectile_ComputePosition(
-            &cli_projectile->projectile, tick_offset * 2 + INTERPOLATION_TICKS);
+    Vector2 catchup_position = Projectile_ComputePosition(&cli_projectile->projectile, tick_offset * 2 + interp_ticks);
 
     // compute the "catchup" speed of the remote projectile
     float catchup_speed = Vector2Distance(cli_projectile->projectile.position, catchup_position) / tick_offset;
 
     cli_projectile->projectile.speed = catchup_speed;
-    cli_projectile->catchup_tick = GameClient_GetCurrentTick() + tick_offset;
+    cli_projectile->catchup_tick = GameClient_GetCurrentTick() + tick_offset + interp_ticks;
 
     LogDebug("Created remote projectile %d. Position: (%f, %f). Direction: (%f %f). Tick offset: %d. Catchup speed: %f",
             remote_object->id,
