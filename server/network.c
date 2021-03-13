@@ -98,8 +98,6 @@ static bool IsProjectileSnapshotUpdateNeeded(unsigned int client_id, NetworkObje
 {
     unsigned int shooter_client_id = network_object->game_object->properties.projectile.shooter_client_id;
 
-    // LogDebug("TOTO: %d", shooter_client_id);
-
     // don't send projectile snapshots to the client that shot it
     if (shooter_client_id == client_id)
         return false;
